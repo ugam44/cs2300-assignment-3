@@ -16,6 +16,7 @@ function isHit(num, numType) {
     return false;
 }
 
+// !!!still needs support for vertical lines!!!
 function drawLine(image, slope, startingPoint) {
     for (var x = 0; x <= image.getWidth(); x+=0.1) {
         var y = slope * x + startingPoint; // y = mx + b
@@ -31,8 +32,13 @@ function drawLine(image, slope, startingPoint) {
         }
     }
 }
-
+// -1/sqrt(2)
 drawLine(image, -0.707106, 1000);
+drawLine(image, -2, 800);
+drawLine(image, 3, 0);
+// 1/sqrt(2)
+drawLine(image, 0.707106, 50)
+
 
 // // Get index of coordinate in the image buffer 
 // var index = image.getIndex(20, 30);
