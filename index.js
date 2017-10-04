@@ -32,13 +32,54 @@ function drawLine(image, slope, startingPoint) {
         }
     }
 }
+
+/* -------------------------------
+This isn't filling all of the pixels in
+Working on fixing it
+------------------------------- */
+function drawProjectile(x0, y0, r){
+    while (r >= 0){
+        x = r -1
+        y = 0
+        dx = 1
+        dy = 1
+        err = dx - (r << 1)
+        while(x >= y){
+            // Set all pixels in circle
+            image.setAt(x0 + x, y0 + y, { red: 255, green: 0, blue: 0, alpha: 255});
+            image.setAt(x0 + y, y0 + x, { red: 255, green: 0, blue: 0, alpha: 255});
+            image.setAt(x0 - y, y0 + x, { red: 255, green: 0, blue: 0, alpha: 255});
+            image.setAt(x0 - x, y0 + y, { red: 255, green: 0, blue: 0, alpha: 255});
+
+            image.setAt(x0 - x, y0 - y, { red: 255, green: 0, blue: 0, alpha: 255});
+            image.setAt(x0 - y, y0 - x, { red: 255, green: 0, blue: 0, alpha: 255});
+            image.setAt(x0 + y, y0 - x, { red: 255, green: 0, blue: 0, alpha: 255});
+            image.setAt(x0 + x, y0 - y, { red: 255, green: 0, blue: 0, alpha: 255});
+
+
+            // Radius Error Handling
+            if (err <= 0){
+                y+=1
+                err += dy
+                dy += 2
+            }
+            if (err > 0){
+                x-=1
+                dx+=2
+                err+=((-1*r) << 1) + dx
+            }
+        }
+        r-=1
+    }
+}
+
 // -1/sqrt(2)
 drawLine(image, -0.707106, 1000);
 drawLine(image, -2, 800);
 drawLine(image, 3, 0);
 // 1/sqrt(2)
 drawLine(image, 0.707106, 50)
-
+drawProjectile()
 
 // // Get index of coordinate in the image buffer 
 // var index = image.getIndex(20, 30);
