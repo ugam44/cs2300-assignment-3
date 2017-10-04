@@ -79,7 +79,7 @@ drawLine(image, -2, 800);
 drawLine(image, 3, 0);
 // 1/sqrt(2)
 drawLine(image, 0.707106, 50)
-drawProjectile()
+drawProjectile(100, 100, 49)
 
 // // Get index of coordinate in the image buffer 
 // var index = image.getIndex(20, 30);
