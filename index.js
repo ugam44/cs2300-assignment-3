@@ -1,7 +1,70 @@
 var PNGImage = require('pngjs-image');
+var fs = require('fs'), filename = process.argv[2];
+
+/* -------------------------------
+Check for proper program usage
+------------------------------- */
+if (process.argv.length < 3) {
+  console.log('Usage: node ' + process.argv[1] + ' <filename>');
+  process.exit(1);
+}
+
+var parameters = {
+    grids: 0,
+    lines: 0,
+    lineWidth: 0,
+    projectileRadius: 0,
+    gridSpacing: 0,
+};
+
+var projectileArr = [];
 
 var image = PNGImage.createImage(1000, 1000);
 
+/* -------------------------------
+Read in file
+Assign Parameter Variables
+------------------------------- */
+fs.readFile(filename, 'utf8', function(err,data) {
+    if(err) throw err;
+
+    console.log('Loaded: ' + filename);
+    
+    var lineArr = data.split("\n");
+    var parameterLine = lineArr[0];
+    var parameterLine = parameterLine.split(",");
+
+    var projectileRadius = Number(parameterLine[3])/2
+    var parameters = {
+        grids: parameterLine[0],
+        lines: parameterLine[1],
+        lineWidth: parameterLine[2],
+        projectileRadius: projectileRadius,
+        gridSpacing: parameterLine[4],
+    }
+
+    for(var x = 1;x < lineArr.length; x++){
+        var line = lineArr[x];
+        line = line.split(":")[1].trim().split("; ")
+        for (var i = line.length - 1; i >= 0; i--) {
+            var projectile = line[i].split(",")
+            //projectileArr.push(projectile)
+            var x0 = Number(projectile[0]);
+            var y0 = Number(projectile[1]);
+            var r0 = Number(parameters.projectileRadius);
+            drawProjectile(x0,y0,r0);
+        }
+    }
+    image.writeImage('./test.png', function (err) {
+     if (err) throw err;
+     console.log('Written to the file');
+    });
+});
+
+
+function print(...str){
+    console.log(...str)
+}
 // Get width and height 
 console.log(image.getWidth());
 console.log(image.getHeight());
@@ -247,52 +310,17 @@ function drawLine(image, slope, startingPoint) {
 }
 
 /* -------------------------------
-This isn't filling all of the pixels in
-Working on fixing it
+Draw Filled in Projectile
 ------------------------------- */
 function drawProjectile(x0, y0, r){
-    while (r >= 0){
-        x = r -1
-        y = 0
-        dx = 1
-        dy = 1
-        err = dx - (r << 1)
-        while(x >= y){
-            // Set all pixels in circle
-            image.setAt(x0 + x, y0 + y, { red: 255, green: 0, blue: 0, alpha: 255});
-            image.setAt(x0 + y, y0 + x, { red: 255, green: 0, blue: 0, alpha: 255});
-            image.setAt(x0 - y, y0 + x, { red: 255, green: 0, blue: 0, alpha: 255});
-            image.setAt(x0 - x, y0 + y, { red: 255, green: 0, blue: 0, alpha: 255});
-
-            image.setAt(x0 - x, y0 - y, { red: 255, green: 0, blue: 0, alpha: 255});
-            image.setAt(x0 - y, y0 - x, { red: 255, green: 0, blue: 0, alpha: 255});
-            image.setAt(x0 + y, y0 - x, { red: 255, green: 0, blue: 0, alpha: 255});
-            image.setAt(x0 + x, y0 - y, { red: 255, green: 0, blue: 0, alpha: 255});
-
-
-            // Radius Error Handling
-            if (err <= 0){
-                y+=1
-                err += dy
-                dy += 2
-            }
-            if (err > 0){
-                x-=1
-                dx+=2
-                err+=((-1*r) << 1) + dx
+    for(var y=(-1*r); y<=r; y++){
+        for(var x=(-1*r); x <= r; x++){
+            if(x*x+y*y <= r*r){
+                image.setAt(x0 + x, y0 + y, { red: 255, green: 0, blue: 0, alpha: 255});
             }
         }
-        r-=1
     }
 }
-
-// -1/sqrt(2)
-drawLine(image, -0.707106, 1000);
-drawLine(image, -2, 800);
-drawLine(image, 3, 0);
-// 1/sqrt(2)
-drawLine(image, 0.707106, 50)
-drawProjectile(100, 100, 49)
 
 // // Get index of coordinate in the image buffer 
 // var index = image.getIndex(20, 30);
@@ -304,9 +332,9 @@ drawProjectile(100, 100, 49)
 //console.log(image.getBlob());
 
 // Get low level image object with buffer from the 'pngjs' package 
-var pngjs = image.getImage();
+//var pngjs = image.getImage();
 
-image.writeImage('./test.png', function (err) {
-   if (err) throw err;
-   console.log('Written to the file');
-});
+// image.writeImage('./test.png', function (err) {
+//  if (err) throw err;
+//  console.log('Written to the file');
+// });
