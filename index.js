@@ -9,6 +9,18 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
+var parameters = {
+    grids: 0,
+    lines: 0,
+    lineWidth: 0,
+    projectileRadius: 0,
+    gridSpacing: 0,
+};
+
+var projectileArr = [];
+
+var image = PNGImage.createImage(1000, 1000);
+
 /* -------------------------------
 Read in file
 Assign Parameter Variables
@@ -18,23 +30,41 @@ fs.readFile(filename, 'utf8', function(err,data) {
 
     console.log('Loaded: ' + filename);
     
-    lineArr = data.split("\n");
-    parameterLine = lineArr[0];
-    parameterArr = parameterLine.split(",")
-    
-    grids = parseInt(parameterArr[0])
-    lines = parseInt(parameterArr[1]) 
-    lineWidth = parseInt(parameterArr[2])
-    projectileRadius = parseFloat(parameterArr[3])/2
-    gridSpacing = parseInt(parameterArr[4])
-    
-    for(var x = 1;x < lineArr.length; x++){
-        line = lineArr[x]
+    var lineArr = data.split("\n");
+    var parameterLine = lineArr[0];
+    var parameterLine = parameterLine.split(",");
+
+    var projectileRadius = Number(parameterLine[3])/2
+    var parameters = {
+        grids: parameterLine[0],
+        lines: parameterLine[1],
+        lineWidth: parameterLine[2],
+        projectileRadius: projectileRadius,
+        gridSpacing: parameterLine[4],
     }
-})
 
-var image = PNGImage.createImage(1000, 1000);
+    for(var x = 1;x < lineArr.length; x++){
+        var line = lineArr[x];
+        line = line.split(":")[1].trim().split("; ")
+        for (var i = line.length - 1; i >= 0; i--) {
+            var projectile = line[i].split(",")
+            //projectileArr.push(projectile)
+            var x0 = Number(projectile[0]);
+            var y0 = Number(projectile[1]);
+            var r0 = Number(parameters.projectileRadius);
+            drawProjectile(x0,y0,r0);
+        }
+    }
+    image.writeImage('./test.png', function (err) {
+     if (err) throw err;
+     console.log('Written to the file');
+    });
+});
 
+
+function print(...str){
+    console.log(...str)
+}
 // Get width and height 
 console.log(image.getWidth());
 console.log(image.getHeight());
@@ -79,8 +109,6 @@ function drawProjectile(x0, y0, r){
     }
 }
 
-drawProjectile(100, 100, 49);
-
 // // Get index of coordinate in the image buffer 
 // var index = image.getIndex(20, 30);
 
@@ -91,9 +119,9 @@ drawProjectile(100, 100, 49);
 //console.log(image.getBlob());
 
 // Get low level image object with buffer from the 'pngjs' package 
-var pngjs = image.getImage();
+//var pngjs = image.getImage();
 
-image.writeImage('./test.png', function (err) {
- if (err) throw err;
- console.log('Written to the file');
-});
+// image.writeImage('./test.png', function (err) {
+//  if (err) throw err;
+//  console.log('Written to the file');
+// });
