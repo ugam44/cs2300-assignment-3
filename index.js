@@ -40,11 +40,19 @@ fs.readFile(filename, 'utf8', function(err,data) {
         // line format -- # of projectiles: proj0x-coord,proj0y-coord; proj1x-coord,proj1y-coord, etc.
         // Example -- 3: 126,52; 46,439; 250,239
         // Don't care about # of projectiles, just want each x,y pair into an array
-        line.split(":")[1].trim().split(";").map(elem => elem.trim()).filter(Boolean).forEach(function (coord) {
-            var [x0, y0] = coord.split(",").map(Number);
-            var r0 = Number(parameters.projectileRadius);
-            drawProjectile(x0,y0,r0);
-        })
+
+        /* --------------------- 
+        Shorthand worked for in1.txt but not in2.txt
+        --------------------- */
+        try{
+            line.split(":")[1].trim().split(";").map(elem => elem.trim()).filter(Boolean).forEach(function (coord) {
+                var [x0, y0] = coord.split(",").map(Number);
+                var r0 = Number(parameters.projectileRadius);
+                drawProjectile(x0,y0,r0);
+            })
+        } catch (e) {
+            console.log(e instanceof TypeError)
+        }
     });
     image.writeImage('./out.png', function (err) {
      if (err) throw err;
@@ -234,10 +242,6 @@ function drawProjectile(x0, y0, r){
                 x1 = (x0 + x)- 500
                 y1 = y0 + y;
                 y1 = 1000 - (y1)
-                // x1 = x0 - 500;
-                // y1 = y0 + 500;
-                // console.log(x1, y1)
-                // image.setAt(x1 - x, y1 + y, { red: 255, green: 0, blue: 0, alpha: 255});
                 image.setAt(x1, y1, { red: 255, green: 0, blue: 0, alpha: 255});
             }
         }
