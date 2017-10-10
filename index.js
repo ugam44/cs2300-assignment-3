@@ -9,14 +9,6 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
-// var parameters = {
-//     grids: 0,
-//     lines: 0,
-//     lineWidth: 0,
-//     projectileRadius: 0,
-//     gridSpacing: 0,
-// };
-
 var projectileArr = [];
 
 var image = PNGImage.createImage(1000, 1000);
@@ -47,19 +39,22 @@ fs.readFile(filename, 'utf8', function(err,data) {
     projectileLines.forEach(function (line) {
         // line format -- # of projectiles: proj0x-coord,proj0y-coord; proj1x-coord,proj1y-coord, etc.
         // Example -- 3: 126,52; 46,439; 250,239
-        // Don't care about # of projectiles, just want each x,y pair in an array
-        line.split(":")[1].trim().split("; ").forEach(function (coord) {
+        // Don't care about # of projectiles, just want each x,y pair into an array
+        line.split(":")[1].trim().split(";").map(elem => elem.trim()).filter(Boolean).forEach(function (coord) {
             var [x0, y0] = coord.split(",").map(Number);
             var r0 = Number(parameters.projectileRadius);
             drawProjectile(x0,y0,r0);
         })
     });
-    image.writeImage('./test2.png', function (err) {
+    image.writeImage('./out.png', function (err) {
      if (err) throw err;
      console.log('Written to the file');
     });
 });
 
+var grids = [];
+var projectileGroups = [];
+var projectiles = [];
 var gridColors = [
     {red: 70,  green: 130, blue: 180, alpha: 255},
     {red: 255, green: 0,   blue: 255, alpha: 255},
@@ -72,11 +67,11 @@ var gridColors = [
     {red: 30,  green: 144, blue: 255, alpha: 255},
     {red: 255, green: 215, blue: 0,   alpha: 255},
     {red: 147, green: 112, blue: 216, alpha: 255},
-]
+];
+
 function setLinePixels (image) {
     var height = image.getHeight();
     var width = image.getWidth();
-
 
     // for each pixel in image
     for (let x = 0; x <= width; x++) {
@@ -94,56 +89,42 @@ function setLinePixels (image) {
                         topCorner = [x + 1, y + 1];
                         bottomCorner = [x, y];
                     }
-                    // if both corners are within threshhold 
-                    if (2 * distanceToLine(topCorner, line) <= line.lineWidth) {
-                        if (2 * distanceToLine(bottomCorner, line) <= line.lineWidth) {
-                            // set pixel, break out of loops
-                            image.setAt(x, height - y, gridColors[gridIndex]);
-                            return true;
-                        }
+                    var distToBottomCorner = signedDistanceToLine(bottomCorner, line);
+                    var distToTopCorner = signedDistanceToLine(topCorner, line);
+                    var setPixel = false;
+                    // if both top & bottom are positive (or zero)
+                    if (distToTopCorner >= 0 && distToBottomCorner >= 0 && (2 * distToBottomCorner + 0.15 <= line.lineWidth)) {
+                        
+                        setPixel = true;
                     }
+                    // else if both top & bottom are negative (or zero)
+                    else if (distToTopCorner <= 0 && distToBottomCorner <= 0 && (2 * distToTopCorner + 0.15 <= line.lineWidth)) {
+                        setPixel = true;
+                    }
+                    // else if top >= 0 and bottom <= 0
+                    else if (distToTopCorner >= 0 && distToBottomCorner <= 0) {
+                        setPixel = true;
+                    }
+
+                    // set pixel, break out of loops
+                    if (setPixel) {
+                        image.setAt(x, height - y, gridColors[gridIndex]);
+                        return true;
+                    }
+                        
                     return false;
-                    // else
-                        // continue
                 });
             });
         }
     }
 }
 
-
-function print(...str){
-    console.log(...str)
-}
-// Get width and height 
-console.log(image.getWidth());
-console.log(image.getHeight());
-
-// G = # of Grids
-// N = # of lines per grid
-// L = Width of lines
-// S = Spacing between lines in each grid
-// D = Diameter of the circular projectile
-
 function Line(lineWidth, lineSpacing, index) {
     this.lineWidth = lineWidth || 0;
     this.lineSpacing = lineSpacing || 0;
-    //this.isBroken = false;
     this.origin = [0, index * lineSpacing]; // [x, y]
     this.vector = [10, 0]; // [x, y]
-    //this.brokenBy = null;
 }
-
-// var parameters = {
-//     numOfGrids: 4,
-//     linesPerGrid: 11,
-//     lineWidth: 4,
-//     projectileDiameter: 49,
-//     lineSpacing: 45
-// };
-var grids = [];
-var projectileGroups = [];
-var projectiles = [];
 
 function sinDegrees(angle) {
     switch(angle) {
@@ -203,21 +184,6 @@ function setGrids(parameters) {
     });
 }
 
-// function getScenario (scenarioNumber) {
-//     var [params, ...projectileGroups] = scenarios[scenarioNumber];
-//     var [numOfGrids, linesPerGrid, lineWidth, projectileDiameter, lineSpacing] = params;
-//     var newParameters = { numOfGrids, linesPerGrid, lineWidth, projectileDiameter, lineSpacing };
-//     projectileGroups = projectileGroups.map(function (group) {
-//         return { brokenLines: [], projectiles: group.slice() }
-//     });
-//     projectiles = projectileGroups.reduce(function (result, curr) {
-//         return result.concat(curr.projectiles);
-//     }, []);
-//     Object.assign(parameters, newParameters);
-//     grids = setGrids(parameters);
-//     //getBrokenLines();
-// };
-
 function getGridAngle (index) {
     var angle = index * gridAngle;
     if (angle >= 90) {
@@ -226,14 +192,7 @@ function getGridAngle (index) {
     return angle;
 };
 
-// function isLineHit(projectile, line) {
-//     var projectileRadius = parameters.projectileDiameter / 2;
-//     var halfLineWidth = parameters.lineWidth / 2;
-//     var dtl = distanceToLine(projectile, line);
-//     return (dtl - projectileRadius) <= halfLineWidth; 
-// }
-
-function distanceToLine(point, line) {
+function signedDistanceToLine(point, line) {
     var [r1, r2] = point;
     if (line.vector[1] === 0) {
         // if horizontal line, return abs. value of y-coord of the point minus y-coord of anywhere on the horiz line
@@ -252,8 +211,6 @@ function distanceToLine(point, line) {
     return Math.abs(d);
 }
 
-//alert(distanceToLine([126,52], {vector: [0.707, -0.707], origin: [95,95]}));
-
 function matrixMultiply(matrixA, matrixB) {
     var result = Array(matrixA.length).fill(Array(matrixB[0].length).fill(0));
     return result.map(function(arr, index) {
@@ -265,16 +222,6 @@ function matrixMultiply(matrixA, matrixB) {
             return sum;
         });
     });
-}
-
-//getScenario(1);
-function isHit(num, numType) {
-    
-}
-
-// !!!still needs support for vertical lines!!!
-function drawLine(image, slope, startingPoint) {
-    
 }
 
 /* -------------------------------
@@ -289,20 +236,3 @@ function drawProjectile(x0, y0, r){
         }
     }
 }
-
-// // Get index of coordinate in the image buffer 
-// var index = image.getIndex(20, 30);
-
-// // Print the red color value 
-// console.log(image.getRed(index));
-
-// Get image data in array
-//console.log(image.getBlob());
-
-// Get low level image object with buffer from the 'pngjs' package 
-//var pngjs = image.getImage();
-
-// image.writeImage('./test.png', function (err) {
-//  if (err) throw err;
-//  console.log('Written to the file');
-// });
