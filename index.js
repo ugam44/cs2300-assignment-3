@@ -231,7 +231,14 @@ function drawProjectile(x0, y0, r){
     for(var y=(-1*r); y<=r; y++){
         for(var x=(-1*r); x <= r; x++){
             if(x*x+y*y <= r*r){
-                image.setAt(x0 + x, y0 + y, { red: 255, green: 0, blue: 0, alpha: 255});
+                x1 = (x0 + x)- 500
+                y1 = y0 + y;
+                y1 = 1000 - (y1)
+                // x1 = x0 - 500;
+                // y1 = y0 + 500;
+                // console.log(x1, y1)
+                // image.setAt(x1 - x, y1 + y, { red: 255, green: 0, blue: 0, alpha: 255});
+                image.setAt(x1, y1, { red: 255, green: 0, blue: 0, alpha: 255});
             }
         }
     }
