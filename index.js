@@ -9,13 +9,13 @@ if (process.argv.length < 3) {
   process.exit(1);
 }
 
-var parameters = {
-    grids: 0,
-    lines: 0,
-    lineWidth: 0,
-    projectileRadius: 0,
-    gridSpacing: 0,
-};
+// var parameters = {
+//     grids: 0,
+//     lines: 0,
+//     lineWidth: 0,
+//     projectileRadius: 0,
+//     gridSpacing: 0,
+// };
 
 var projectileArr = [];
 
@@ -29,37 +29,87 @@ fs.readFile(filename, 'utf8', function(err,data) {
     if(err) throw err;
 
     console.log('Loaded: ' + filename);
-    
-    var lineArr = data.split("\n");
-    var parameterLine = lineArr[0];
-    var parameterLine = parameterLine.split(",");
+    // first line of file determines parameters, rest of lines are projectile definitions
+    var [parameterLine, ...projectileLines] = data.split("\n");
+    parameterLine = parameterLine.split(",").map(elem => Number(elem.replace("\r", "")));
 
-    var projectileRadius = Number(parameterLine[3])/2
     var parameters = {
-        grids: parameterLine[0],
-        lines: parameterLine[1],
+        numOfGrids: parameterLine[0],
+        linesPerGrid: parameterLine[1],
         lineWidth: parameterLine[2],
-        projectileRadius: projectileRadius,
-        gridSpacing: parameterLine[4],
+        projectileDiameter: parameterLine[3],
+        projectileRadius: parameterLine[3]/2,
+        lineSpacing: parameterLine[4],
     }
-
-    for(var x = 1;x < lineArr.length; x++){
-        var line = lineArr[x];
-        line = line.split(":")[1].trim().split("; ")
-        for (var i = line.length - 1; i >= 0; i--) {
-            var projectile = line[i].split(",")
-            //projectileArr.push(projectile)
-            var x0 = Number(projectile[0]);
-            var y0 = Number(projectile[1]);
+    grids = setGrids(parameters);
+    setLinePixels(image);
+    
+    projectileLines.forEach(function (line) {
+        // line format -- # of projectiles: proj0x-coord,proj0y-coord; proj1x-coord,proj1y-coord, etc.
+        // Example -- 3: 126,52; 46,439; 250,239
+        // Don't care about # of projectiles, just want each x,y pair in an array
+        line.split(":")[1].trim().split("; ").forEach(function (coord) {
+            var [x0, y0] = coord.split(",").map(Number);
             var r0 = Number(parameters.projectileRadius);
             drawProjectile(x0,y0,r0);
-        }
-    }
-    image.writeImage('./test.png', function (err) {
+        })
+    });
+    image.writeImage('./test2.png', function (err) {
      if (err) throw err;
      console.log('Written to the file');
     });
 });
+
+var gridColors = [
+    {red: 70,  green: 130, blue: 180, alpha: 255},
+    {red: 255, green: 0,   blue: 255, alpha: 255},
+    {red: 184, green: 134, blue: 11,  alpha: 255},
+    {red: 0,   green: 128, blue: 0,   alpha: 255},
+    {red: 127, green: 255, blue: 0,   alpha: 255},
+    {red: 0,   green: 255, blue: 255, alpha: 255},
+    {red: 255, green: 235, blue: 205, alpha: 255},
+    {red: 255, green: 140, blue: 0,   alpha: 255},
+    {red: 30,  green: 144, blue: 255, alpha: 255},
+    {red: 255, green: 215, blue: 0,   alpha: 255},
+    {red: 147, green: 112, blue: 216, alpha: 255},
+]
+function setLinePixels (image) {
+    var height = image.getHeight();
+    var width = image.getWidth();
+
+
+    // for each pixel in image
+    for (let x = 0; x <= width; x++) {
+        for (let y = 0; y <= height; y++) {
+            // for each grid in grids until pixel is hit
+            grids.some(function (grid, gridIndex) {
+                // for each line in grid.lines until pixel is hit
+                return grid.lines.some(function (line) {
+                    // if line angle (slope/vector[1]) > 0
+                    // use top-left and bottom-right corners to determine distances
+                    var topCorner = [x, y + 1];
+                    var bottomCorner = [x + 1, y];
+                    // else, use top-right and bottom-left corners to determine distances
+                    if (line.vector[1] < 0) {
+                        topCorner = [x + 1, y + 1];
+                        bottomCorner = [x, y];
+                    }
+                    // if both corners are within threshhold 
+                    if (2 * distanceToLine(topCorner, line) <= line.lineWidth) {
+                        if (2 * distanceToLine(bottomCorner, line) <= line.lineWidth) {
+                            // set pixel, break out of loops
+                            image.setAt(x, height - y, gridColors[gridIndex]);
+                            return true;
+                        }
+                    }
+                    return false;
+                    // else
+                        // continue
+                });
+            });
+        }
+    }
+}
 
 
 function print(...str){
@@ -84,13 +134,13 @@ function Line(lineWidth, lineSpacing, index) {
     //this.brokenBy = null;
 }
 
-var parameters = {
-    numOfGrids: 4,
-    linesPerGrid: 11,
-    lineWidth: 4,
-    projectileDiameter: 49,
-    lineSpacing: 45
-};
+// var parameters = {
+//     numOfGrids: 4,
+//     linesPerGrid: 11,
+//     lineWidth: 4,
+//     projectileDiameter: 49,
+//     lineSpacing: 45
+// };
 var grids = [];
 var projectileGroups = [];
 var projectiles = [];
@@ -153,20 +203,20 @@ function setGrids(parameters) {
     });
 }
 
-function getScenario (scenarioNumber) {
-    var [params, ...projectileGroups] = scenarios[scenarioNumber];
-    var [numOfGrids, linesPerGrid, lineWidth, projectileDiameter, lineSpacing] = params;
-    var newParameters = { numOfGrids, linesPerGrid, lineWidth, projectileDiameter, lineSpacing };
-    projectileGroups = projectileGroups.map(function (group) {
-        return { brokenLines: [], projectiles: group.slice() }
-    });
-    projectiles = projectileGroups.reduce(function (result, curr) {
-        return result.concat(curr.projectiles);
-    }, []);
-    Object.assign(parameters, newParameters);
-    grids = setGrids(parameters);
-    //getBrokenLines();
-};
+// function getScenario (scenarioNumber) {
+//     var [params, ...projectileGroups] = scenarios[scenarioNumber];
+//     var [numOfGrids, linesPerGrid, lineWidth, projectileDiameter, lineSpacing] = params;
+//     var newParameters = { numOfGrids, linesPerGrid, lineWidth, projectileDiameter, lineSpacing };
+//     projectileGroups = projectileGroups.map(function (group) {
+//         return { brokenLines: [], projectiles: group.slice() }
+//     });
+//     projectiles = projectileGroups.reduce(function (result, curr) {
+//         return result.concat(curr.projectiles);
+//     }, []);
+//     Object.assign(parameters, newParameters);
+//     grids = setGrids(parameters);
+//     //getBrokenLines();
+// };
 
 function getGridAngle (index) {
     var angle = index * gridAngle;
@@ -176,12 +226,12 @@ function getGridAngle (index) {
     return angle;
 };
 
-function isLineHit(projectile, line) {
-    var projectileRadius = parameters.projectileDiameter / 2;
-    var halfLineWidth = parameters.lineWidth / 2;
-    var dtl = distanceToLine(projectile, line);
-    return (dtl - projectileRadius) <= halfLineWidth; 
-}
+// function isLineHit(projectile, line) {
+//     var projectileRadius = parameters.projectileDiameter / 2;
+//     var halfLineWidth = parameters.lineWidth / 2;
+//     var dtl = distanceToLine(projectile, line);
+//     return (dtl - projectileRadius) <= halfLineWidth; 
+// }
 
 function distanceToLine(point, line) {
     var [r1, r2] = point;
@@ -217,89 +267,7 @@ function matrixMultiply(matrixA, matrixB) {
     });
 }
 
-var scenarios = {
-    // output in out1.txt
-    "1": [
-        [4,11,2,49,45],
-        [[126,52], [46,439], [250,239]],
-        [[86,133], [435,435]]
-    ],
-    // output in out2.txt
-    "2": [
-        [2,11,10,490,450],
-        [[860,1330], [4350,4350]],
-        [[1260,520], [460,4390], [2500,2390]]
-    ],
-    // output in out3.txt
-    "3": [
-        [3,21,10,30,50],
-        [[86,133], [435,435]],
-        [[126,52], [46,439], [250,239]]
-    ],
-    // output in out4.txt
-    "4": [
-        [3,21,10,30,50],
-        [[86,133], [435,435]],
-        [[126,52], [46,439], [250,239]],
-        [[126,52], [46,439], [250,239], [20,330]],
-        [[206,52], [246,439], [250,239], [220,330]]
-    ],
-    // output in out5.txt
-    "5": [
-        [4,21,10,30,50],
-        [[86,133], [435,435]],
-        [[126,52], [46,439], [250,239]],
-        [[126,52], [46,439], [250,239], [20,330]],
-        [[206,52], [246,439], [250,239], [220,330]]
-    ],
-    // output in out6.txt
-    "6": [
-        [5,21,10,30,50],
-        [[86,133], [435,435]],
-        [[126,52], [46,439], [250,239]],
-        [[126,52], [46,439], [250,239], [20,330]],
-        [[206,52], [246,439], [250,239], [220,330]]
-    ],
-    // output in out7.txt
-    "7": [
-        [6,21,10,30,50],
-        [[86,133], [435,435]],
-        [[126,52], [46,439], [250,239]],
-        [[126,52], [46,439], [250,239], [20,330]],
-        [[206,52], [246,439], [250,239], [220,330]]
-    ],
-    // output in out8.txt
-    "8": [
-        [7,21,10,30,50],
-        [[86,133], [435,435]],
-        [[126,52], [46,439], [250,239]],
-        [[126,52], [46,439], [250,239], [20,330]],
-        [[206,52], [246,439], [250,239], [220,330]]
-    ],
-    // output in out9.txt
-    "9": [
-        [7,111,20,20,50],
-        [[860,1330], [4350,4350]],
-        [[1260,520], [460, 4390], [2500,2390]],
-        [[1260,520], [460, 4390], [2500,2390], [200, 3300]],
-        [[2060,520], [2460,4390], [2500,2390], [2200,3300]],
-        [[2060,520], [2460,4390], [2500,2390], [2200,3300], [-100,-200]],
-        [[2060,520], [2460,4390], [2500,2390], [2200,3300], [-100,-200], [-400, -200]],
-        [[2060,520], [2460,4390], [2500,2390], [2200,3300], [-100,-200], [-400, -200], [-200, 400]],
-        [[2060,520], [2460,4390], [2500,2390], [2200,3300], [-100,-200], [-400, -200], [200, -400], [1200, 100]]
-    ],
-    "t1": [
-        [6,11,2,49,45],
-        [[100,100]],
-        [[200,200]],
-        [[126,52], [46,439], [250,239]],
-        [[86,133], [435,435]]
-    ]
-
-};
-
-getScenario(1);
-console.log(grids[1].lines);
+//getScenario(1);
 function isHit(num, numType) {
     
 }
