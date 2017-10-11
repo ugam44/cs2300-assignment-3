@@ -41,15 +41,13 @@ fs.readFile(filename, 'utf8', function(err,data) {
         // Example -- 3: 126,52; 46,439; 250,239
         // Don't care about # of projectiles, just want each x,y pair into an array
 
-        /* --------------------- 
-        Shorthand worked for in1.txt but not in2.txt
-        --------------------- */
         try{
-            line.split(":")[1].trim().split(";").map(elem => elem.trim()).filter(Boolean).forEach(function (coord) {
+            var projectiles = line.split(":")[1].trim().split(";").map(elem => elem.trim()).filter(Boolean);
+            projectiles.forEach(function (coord) {
                 var [x0, y0] = coord.split(",").map(Number);
-                var r0 = Number(parameters.projectileRadius);
-                drawProjectile(x0,y0,r0);
-            })
+                var radius = Number(parameters.projectileRadius);
+                drawProjectile(x0, y0, radius);
+            });
         } catch (e) {
             console.log(e instanceof TypeError)
         }
@@ -106,7 +104,7 @@ function setLinePixels (image) {
                         setPixel = true;
                     }
                     // else if both top & bottom are negative (or zero)
-                    else if (distToTopCorner <= 0 && distToBottomCorner <= 0 && (2 * distToTopCorner + 0.15 <= line.lineWidth)) {
+                    else if (distToTopCorner <= 0 && distToBottomCorner <= 0 && (Math.abs(2 * distToTopCorner) + 0.15 <= line.lineWidth)) {
                         setPixel = true;
                     }
                     // else if top >= 0 and bottom <= 0
@@ -204,19 +202,21 @@ function signedDistanceToLine(point, line) {
     var [r1, r2] = point;
     if (line.vector[1] === 0) {
         // if horizontal line, return abs. value of y-coord of the point minus y-coord of anywhere on the horiz line
-        return Math.abs(point[1] - line.origin[1]);
+        return point[1] - line.origin[1];
     }
     if (line.vector[0] === 0) {
         // if vertical line, return abs. value of x-coord of the point minus x-coord of anywhere on the vertical line
-        return Math.abs(point[0] - line.origin[0]);
+        return point[0] - line.origin[0];
     }
     var aVector = [-1 * line.vector[1], line.vector[0]];
     var aVectorMagnitude = Math.sqrt(Math.pow(aVector[0], 2) + Math.pow(aVector[1], 2));
+    // Line equation: ax + by + c = 0
     var a = aVector[0];
     var b = aVector[1];
     var c = ((aVector[0] * line.origin[0]) + (aVector[1] * line.origin[1]));
+    // d = distance from point to line (this is a signed value)
     var d = (a*r1 + b*r2 + c) / aVectorMagnitude;
-    return Math.abs(d);
+    return d;
 }
 
 function matrixMultiply(matrixA, matrixB) {
@@ -232,16 +232,14 @@ function matrixMultiply(matrixA, matrixB) {
     });
 }
 
-/* -------------------------------
-Draw Filled in Projectile
-------------------------------- */
-function drawProjectile(x0, y0, r){
-    for(var y=(-1*r); y<=r; y++){
-        for(var x=(-1*r); x <= r; x++){
-            if(x*x+y*y <= r*r){
-                x1 = (x0 + x)- 500
+function drawProjectile(x0, y0, radius){
+    radius = Math.ceil(radius);
+    for(var y = -radius; y <= radius; y++){
+        for(var x = -radius; x <= radius; x++){
+            if(x*x+y*y <= radius*radius){
+                x1 = x0 + x;
                 y1 = y0 + y;
-                y1 = 1000 - (y1)
+                y1 = image.getHeight() - y1;
                 image.setAt(x1, y1, { red: 255, green: 0, blue: 0, alpha: 255});
             }
         }
