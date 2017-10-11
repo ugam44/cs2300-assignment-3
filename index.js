@@ -5,14 +5,14 @@ var fs = require("fs"), filename = process.argv[2];
 Check for proper program usage
 ------------------------------- */
 if (process.argv.length < 3) {
-  console.log('Usage: node . <filename.txt>');
-  console.log('Ex: node . in2.txt')
-  process.exit(1);
+    console.log("Usage: node . <filename.txt>");
+    console.log("Ex: node . in2.txt");
+    process.exit(1);
 }
-if (process.argv[2].split(".")[1] != 'txt'){
-    console.log("This is not the proper filetype")
-    console.log('Usage: node . <filename.txt>');
-    process.exit(1)
+if (process.argv[2].split(".")[1] != "txt"){
+    console.log("This is not the proper filetype");
+    console.log("Usage: node . <filename.txt>");
+    process.exit(1);
 }
 
 var image = PNGImage.createImage(1000, 1000);
@@ -25,8 +25,7 @@ fs.readFile(filename, "utf8", function(err,data) {
     if(err) throw err;
 
     console.log("Loaded: " + filename);
-    filename = filename.split(".txt")[0]
-    outfile = "./" + filename + "out.png"
+    var outfile = `./${filename.split(".txt")[0]}out.png`;
     // first line of file determines parameters, rest of lines are projectile definitions
     var [parameterLine, ...projectileLines] = data.split("\n");
     parameterLine = parameterLine.split(",").map(elem => Number(elem.replace("\r", "")));
@@ -84,8 +83,8 @@ function setLinePixels (image) {
     var width = image.getWidth();
 
     // for each pixel in image
-    for (let x = 0; x <= width; x++) {
-        for (let y = 0; y <= height; y++) {
+    for (let x = 0; x < width; x++) {
+        for (let y = 0; y < height; y++) {
             // for each grid in grids until pixel is hit
             grids.some(function (grid, gridIndex) {
                 // for each line in grid.lines until pixel is hit
@@ -102,13 +101,13 @@ function setLinePixels (image) {
                     var distToBottomCorner = signedDistanceToLine(bottomCorner, line);
                     var distToTopCorner = signedDistanceToLine(topCorner, line);
                     var setPixel = false;
+
                     // if both top & bottom are positive (or zero)
-                    if (distToTopCorner >= 0 && distToBottomCorner >= 0 && (2 * distToBottomCorner + 0.15 <= line.lineWidth)) {
-                        
+                    if (distToTopCorner >= 0 && distToBottomCorner >= 0 && (2 * distToBottomCorner + 0.05 <= line.lineWidth)) {
                         setPixel = true;
                     }
                     // else if both top & bottom are negative (or zero)
-                    else if (distToTopCorner <= 0 && distToBottomCorner <= 0 && (Math.abs(2 * distToTopCorner) + 0.15 <= line.lineWidth)) {
+                    else if (distToTopCorner <= 0 && distToBottomCorner <= 0 && (Math.abs(2 * distToTopCorner) + 0.05 <= line.lineWidth)) {
                         setPixel = true;
                     }
                     // else if top >= 0 and bottom <= 0
@@ -171,9 +170,12 @@ function setGrids(parameters) {
     var gridAngle = 180 / _grids.length;
     return _grids.map(function (grid, gridIndex) {
         var rotationAngle = gridIndex * gridAngle;
-        if (rotationAngle > 0 && rotationAngle <= 90) {
+        // if line angle is between 0 and 45, or equal to 90, rotate by 180 degrees to get Q1 coverage
+        if ((rotationAngle > 0 && rotationAngle <= 45) || (rotationAngle === 90)) {
             rotationAngle -= 180;
         }
+        // else, if it is between 45 and 90 (not-inclusive), leave the angle alone to maximize Q1 coverage
+
         var rotationMatrix = [
             [cosDegrees(rotationAngle), -1 * sinDegrees(rotationAngle)],
             [sinDegrees(rotationAngle), cosDegrees(rotationAngle)]
@@ -205,7 +207,9 @@ function signedDistanceToLine(point, line) {
         return point[0] - line.origin[0];
     }
     var aVector = [-1 * line.vector[1], line.vector[0]];
+    // sqrt(x0^2 + x1^2 + ... + xn^2)
     var aVectorMagnitude = Math.sqrt(Math.pow(aVector[0], 2) + Math.pow(aVector[1], 2));
+    
     // Line equation: ax + by + c = 0
     var a = aVector[0];
     var b = aVector[1];
