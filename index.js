@@ -5,8 +5,14 @@ var fs = require("fs"), filename = process.argv[2];
 Check for proper program usage
 ------------------------------- */
 if (process.argv.length < 3) {
-    console.log("Usage: node " + process.argv[1] + " <filename>");
-    process.exit(1);
+  console.log('Usage: node . <filename.txt>');
+  console.log('Ex: node . in2.txt')
+  process.exit(1);
+}
+if (process.argv[2].split(".")[1] != 'txt'){
+    console.log("This is not the proper filetype")
+    console.log('Usage: node . <filename.txt>');
+    process.exit(1)
 }
 
 var image = PNGImage.createImage(1000, 1000);
@@ -19,6 +25,8 @@ fs.readFile(filename, "utf8", function(err,data) {
     if(err) throw err;
 
     console.log("Loaded: " + filename);
+    filename = filename.split(".txt")[0]
+    outfile = "./" + filename + "out.png"
     // first line of file determines parameters, rest of lines are projectile definitions
     var [parameterLine, ...projectileLines] = data.split("\n");
     parameterLine = parameterLine.split(",").map(elem => Number(elem.replace("\r", "")));
@@ -50,7 +58,7 @@ fs.readFile(filename, "utf8", function(err,data) {
             console.log(e instanceof TypeError);
         }
     });
-    image.writeImage("./out.png", function (err) {
+    image.writeImage(outfile, function (err) {
         if (err) throw err;
         console.log("Written to the file");
     });
