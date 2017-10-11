@@ -1,15 +1,13 @@
-var PNGImage = require('pngjs-image');
-var fs = require('fs'), filename = process.argv[2];
+var PNGImage = require("pngjs-image");
+var fs = require("fs"), filename = process.argv[2];
 
 /* -------------------------------
 Check for proper program usage
 ------------------------------- */
 if (process.argv.length < 3) {
-  console.log('Usage: node ' + process.argv[1] + ' <filename>');
-  process.exit(1);
+    console.log("Usage: node " + process.argv[1] + " <filename>");
+    process.exit(1);
 }
-
-var projectileArr = [];
 
 var image = PNGImage.createImage(1000, 1000);
 
@@ -17,10 +15,10 @@ var image = PNGImage.createImage(1000, 1000);
 Read in file
 Assign Parameter Variables
 ------------------------------- */
-fs.readFile(filename, 'utf8', function(err,data) {
+fs.readFile(filename, "utf8", function(err,data) {
     if(err) throw err;
 
-    console.log('Loaded: ' + filename);
+    console.log("Loaded: " + filename);
     // first line of file determines parameters, rest of lines are projectile definitions
     var [parameterLine, ...projectileLines] = data.split("\n");
     parameterLine = parameterLine.split(",").map(elem => Number(elem.replace("\r", "")));
@@ -32,7 +30,7 @@ fs.readFile(filename, 'utf8', function(err,data) {
         projectileDiameter: parameterLine[3],
         projectileRadius: parameterLine[3]/2,
         lineSpacing: parameterLine[4],
-    }
+    };
     grids = setGrids(parameters);
     setLinePixels(image);
     
@@ -49,18 +47,16 @@ fs.readFile(filename, 'utf8', function(err,data) {
                 drawProjectile(x0, y0, radius);
             });
         } catch (e) {
-            console.log(e instanceof TypeError)
+            console.log(e instanceof TypeError);
         }
     });
-    image.writeImage('./out.png', function (err) {
-     if (err) throw err;
-     console.log('Written to the file');
+    image.writeImage("./out.png", function (err) {
+        if (err) throw err;
+        console.log("Written to the file");
     });
 });
 
 var grids = [];
-var projectileGroups = [];
-var projectiles = [];
 var gridColors = [
     {red: 70,  green: 130, blue: 180, alpha: 255},
     {red: 255, green: 0,   blue: 255, alpha: 255},
@@ -134,28 +130,28 @@ function Line(lineWidth, lineSpacing, index) {
 
 function sinDegrees(angle) {
     switch(angle) {
-        case 0:
-            return 0;
-        case 90:
-            return 1;
-        case -90:
-            return -1;
-        case 180:
-        case -180:
-            return 0;
+    case 0:
+        return 0;
+    case 90:
+        return 1;
+    case -90:
+        return -1;
+    case 180:
+    case -180:
+        return 0;
     }
     return Math.sin(angle/180*Math.PI);
 }
 
 function cosDegrees(angle) {
     switch(angle) {
-        case 0:
-            return 1;
-        case 90:
-        case -90:
-            return 0;
-        case 180:
-            return -1;
+    case 0:
+        return 1;
+    case 90:
+    case -90:
+        return 0;
+    case 180:
+        return -1;
     }
     return Math.cos(angle/180*Math.PI);
 }
@@ -189,14 +185,6 @@ function setGrids(parameters) {
         return { lines: lines };
     });
 }
-
-function getGridAngle (index) {
-    var angle = index * gridAngle;
-    if (angle >= 90) {
-        angle -= 180;
-    }
-    return angle;
-};
 
 function signedDistanceToLine(point, line) {
     var [r1, r2] = point;
@@ -237,9 +225,8 @@ function drawProjectile(x0, y0, radius){
     for(var y = -radius; y <= radius; y++){
         for(var x = -radius; x <= radius; x++){
             if(x*x+y*y <= radius*radius){
-                x1 = x0 + x;
-                y1 = y0 + y;
-                y1 = image.getHeight() - y1;
+                var x1 = x0 + x;
+                var y1 = image.getHeight() - (y0 + y);
                 image.setAt(x1, y1, { red: 255, green: 0, blue: 0, alpha: 255});
             }
         }
